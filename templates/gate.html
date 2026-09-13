@@ -3,34 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piper Gate</title>
+    <title>GATEWAY // {{ session.item_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <script src="https://js.stripe.com/v3/"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #0f1117; color: #e6edf3; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-        .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; width: 100%; max-width: 440px; padding: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .header { margin-bottom: 24px; text-align: center; }
-        .header h1 { font-size: 1.1rem; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
-        .amount { font-size: 2.2rem; font-weight: 700; color: #58a6ff; margin: 8px 0; }
-        .item-name { font-size: 1rem; color: #c9d1d9; }
-        #payment-element { margin: 24px 0; }
-        button { width: 100%; padding: 14px; background: #238636; border: none; border-radius: 6px; color: #ffffff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        button:hover { background: #2ea043; }
-        button:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; }
-        #error-message { color: #f85149; font-size: 0.875rem; margin-top: 12px; text-align: center; }
+        :root {
+            --bg: #dcdcd6;
+            --dot: #9e9e98;
+            --card-bg: #faf8f5;
+            --ink: #10161a;
+            --border: #000000;
+            --shadow: #000000;
+            --forest: #00b894;
+            --mustard: #fdcb6e;
+            --sky: #0984e3;
+            --sunset: #e17055;
+            --error: #d63031;
+            --font-mono: 'Space Mono', 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-mono);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image: radial-gradient(var(--dot) 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+            color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+
+        /* Neobrutalist Receipt Card */
+        .retro-card {
+            width: 100%;
+            max-width: 440px;
+            background: var(--card-bg);
+            border: 3px solid var(--border);
+            box-shadow: 6px 6px 0px var(--shadow);
+            padding: 28px 24px;
+            position: relative;
+        }
+
+        /* Terminal Receipt Header */
+        .receipt-terminal-header {
+            font-size: 11px;
+            font-weight: 700;
+            color: #555550;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+            word-break: break-all;
+        }
+
+        /* Status & Product Info */
+        .summary-block {
+            text-align: center;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--mustard);
+            border: 2px solid var(--border);
+            padding: 4px 10px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--forest);
+            border-radius: 50%;
+        }
+
+        .item-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .amount-display {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -0.5px;
+            margin-top: 4px;
+        }
+
+        /* Receipt Tear-Off Separator */
+        .receipt-tear-line {
+            border: none;
+            border-top: 2px dashed #000000;
+            margin: 22px 0;
+            width: 100%;
+        }
+
+        /* Form Controls */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--ink);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        /* Unified Input Shells */
+        .input-shell {
+            width: 100%;
+            height: 48px;
+            padding: 12px 14px;
+            border: 2px solid #000000;
+            background-color: #ffffff;
+            color: var(--ink);
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 700;
+            outline: none;
+            border-radius: 0;
+            transition: transform 0.08s ease, box-shadow 0.08s ease, border-color 0.08s ease;
+        }
+
+        /* Stripe container iframe adjustment */
+        div.input-shell {
+            display: flex;
+            align-items: center;
+        }
+
+        div.input-shell .__PrivateStripeElement {
+            width: 100% !important;
+        }
+
+        input.input-shell::placeholder {
+            color: #8395a7;
+            font-weight: 400;
+            font-family: var(--font-mono);
+        }
+
+        /* 3D Focus & Invalid States */
+        .input-shell:focus,
+        .input-shell.is-focused {
+            border-color: var(--sky);
+            box-shadow: 3px 3px 0px #000000;
+        }
+
+        .input-shell.is-invalid {
+            border-color: var(--error);
+            background-color: #fff5f5;
+        }
+
+        /* 3D Tactile Submit Button */
+        .btn-submit {
+            width: 100%;
+            height: 48px;
+            padding: 0 18px;
+            background: var(--forest);
+            color: #ffffff;
+            font-family: var(--font-mono);
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            border: 2px solid #000000;
+            box-shadow: 4px 4px 0px #000000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            border-radius: 0;
+            transition: transform 0.08s ease, box-shadow 0.08s ease;
+        }
+
+        .btn-submit:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 5px 5px 0px #000000;
+        }
+
+        .btn-submit:active {
+            transform: translate(3px, 3px);
+            box-shadow: 0px 0px 0px #000000;
+        }
+
+        .btn-submit:disabled {
+            background: #b2bec3;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 2px 2px 0px #000000;
+        }
+
+        .cancel-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            color: var(--ink);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-decoration: underline;
+            text-transform: uppercase;
+        }
+
+        .cancel-link:hover {
+            color: var(--sunset);
+        }
+
+        /* Micro-Footer Encryption Stamp */
+        .micro-footer {
+            text-align: center;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            color: #636e72;
+            margin-top: 20px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            text-transform: uppercase;
+        }
+
+        #error-message {
+            color: var(--error);
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 12px;
+            text-align: center;
+            letter-spacing: 0.5px;
+            min-height: 18px;
+        }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 3px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading .spinner { display: inline-block; }
+        .loading .btn-text { display: none; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="header">
-            <h1>Piper Gate</h1>
-            <div class="amount">{{ formatted_amount }}</div>
-            <div class="item-name">{{ session.item_name }}</div>
+    <div class="retro-card">
+        <!-- Terminal/Receipt Header -->
+        <div class="receipt-terminal-header">
+            ISSUED BY: iMeditatii // REF #{{ session.id[:12] }}
         </div>
+
+        <!-- Summary -->
+        <div class="summary-block">
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                PAYMENT TUNNEL ONLINE
+            </div>
+            <div class="item-name">{{ session.item_name }}</div>
+            <div class="amount-display">{{ formatted_amount }}</div>
+        </div>
+
+        <!-- Dashed Receipt Tear-Off Line -->
+        <hr class="receipt-tear-line">
+
+        <!-- Form Elements -->
         <form id="payment-form">
-            <div id="payment-element"></div>
-            <button id="submit">Pay Now</button>
+            <!-- Cardholder Name -->
+            <div class="form-group">
+                <label for="cardholder-name">PLAYER / CARDHOLDER NAME</label>
+                <input 
+                    type="text" 
+                    id="cardholder-name" 
+                    class="input-shell" 
+                    placeholder="E.G. ALEXANDRU POPESCU" 
+                    required 
+                    autocomplete="cc-name"
+                >
+            </div>
+
+            <!-- Split Element: Card Number -->
+            <div class="form-group">
+                <label for="card-number">CARD NUMBER</label>
+                <div id="card-number" class="input-shell"></div>
+            </div>
+
+            <!-- Split Elements: Expiry & CVC -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="card-expiry">EXP DATE</label>
+                    <div id="card-expiry" class="input-shell"></div>
+                </div>
+                <div class="form-group">
+                    <label for="card-cvc">SECURITY CVC</label>
+                    <div id="card-cvc" class="input-shell"></div>
+                </div>
+            </div>
+
+            <button type="submit" id="submit" class="btn-submit">
+                <span class="spinner"></span>
+                <span class="btn-text">PAY {{ formatted_amount }}</span>
+            </button>
+
             <div id="error-message"></div>
+
+            {% if session.cancel_url %}
+            <a href="{{ session.cancel_url }}" class="cancel-link">&larr; CANCEL TRANSACTION</a>
+            {% endif %}
+
+            <!-- Micro-Footer -->
+            <div class="micro-footer">
+                🔒 256-BIT ENCRYPTED // POWERED BY STRIPE
+            </div>
         </form>
     </div>
 
@@ -39,33 +357,96 @@
         const clientSecret = "{{ session.client_secret }}";
         const successUrl = "{{ session.success_url }}";
 
-        const elements = stripe.elements({
-            clientSecret: clientSecret,
-            appearance: { theme: 'night', labels: 'floating' }
+        const elements = stripe.elements();
+
+        // Injected typography and styling to match the native monospace input
+        const elementStyles = {
+            base: {
+                color: '#10161A',
+                fontFamily: '"Space Mono", "Courier New", Courier, monospace',
+                fontSize: '14px',
+                fontWeight: '700',
+                fontSmoothing: 'antialiased',
+                lineHeight: '20px',
+                '::placeholder': {
+                    color: '#8395a7',
+                    fontWeight: '400',
+                },
+            },
+            invalid: {
+                color: '#D63031',
+                iconColor: '#D63031',
+            }
+        };
+
+        const cardNumber = elements.create('cardNumber', { 
+            style: elementStyles, 
+            showIcon: true 
+        });
+        const cardExpiry = elements.create('cardExpiry', { 
+            style: elementStyles 
+        });
+        const cardCvc = elements.create('cardCvc', { 
+            style: elementStyles 
         });
 
-        const paymentElement = elements.create("payment");
-        paymentElement.mount("#payment-element");
+        cardNumber.mount('#card-number');
+        cardExpiry.mount('#card-expiry');
+        cardCvc.mount('#card-cvc');
+
+        const splitElements = [
+            { instance: cardNumber, id: 'card-number' },
+            { instance: cardExpiry, id: 'card-expiry' },
+            { instance: cardCvc, id: 'card-cvc' }
+        ];
 
         const form = document.getElementById("payment-form");
         const submitBtn = document.getElementById("submit");
         const errorMessage = document.getElementById("error-message");
+        const cardholderName = document.getElementById("cardholder-name");
+
+        // Sync focus, blur, and validation styles to matching container shells
+        splitElements.forEach(({ instance, id }) => {
+            const container = document.getElementById(id);
+
+            instance.on('focus', () => container.classList.add('is-focused'));
+            instance.on('blur', () => container.classList.remove('is-focused'));
+            instance.on('change', (event) => {
+                if (event.error) {
+                    container.classList.add('is-invalid');
+                    errorMessage.textContent = event.error.message.toUpperCase();
+                } else {
+                    container.classList.remove('is-invalid');
+                    errorMessage.textContent = '';
+                }
+            });
+        });
 
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
+
             submitBtn.disabled = true;
+            submitBtn.classList.add("loading");
             errorMessage.textContent = "";
 
-            const { error } = await stripe.confirmPayment({
-                elements,
-                confirmParams: {
-                    return_url: successUrl,
+            const { paymentIntent, error } = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: {
+                    card: cardNumber,
+                    billing_details: {
+                        name: cardholderName.value.trim() || undefined,
+                    }
                 },
+                return_url: successUrl
             });
 
             if (error) {
-                errorMessage.textContent = error.message;
+                errorMessage.textContent = error.message.toUpperCase();
                 submitBtn.disabled = false;
+                submitBtn.classList.remove("loading");
+            } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+                window.location.href = successUrl;
+            } else {
+                window.location.href = successUrl;
             }
         });
     </script>
